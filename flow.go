@@ -21,7 +21,7 @@ func DefineWorkflow(workflow *flow.Workflow, context *flow.Context) error {
 
 func main() {
 	fs := &goflow.FlowService{
-		Port:              8080,
+		Port:              8090,
 		RedisURL:          "localhost:6379",
 		OpenTraceUrl:      "localhost:5775",
 		WorkerConcurrency: 5,
