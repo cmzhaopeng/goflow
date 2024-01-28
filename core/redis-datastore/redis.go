@@ -1,10 +1,11 @@
 package RedisDataStore
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-redis/redis"
-	faasflow "github.com/s8sg/goflow/core/sdk"
+	"github.com/s8sg/goflow/core/sdk"
 )
 
 type RedisDataStore struct {
@@ -12,10 +13,11 @@ type RedisDataStore struct {
 	redisClient redis.UniversalClient
 }
 
-func GetRedisDataStore(redisUri string) (faasflow.DataStore, error) {
+func GetRedisDataStore(redisUri string, password string) (sdk.DataStore, error) {
 	ds := &RedisDataStore{}
 	client := redis.NewClient(&redis.Options{
-		Addr: redisUri,
+		Addr:     redisUri,
+		Password: password,
 	})
 	err := client.Ping().Err()
 	if err != nil {
@@ -60,7 +62,11 @@ func (this *RedisDataStore) Get(key string) ([]byte, error) {
 	}
 
 	fullPath := getPath(this.bucketName, key)
-	value, err := this.redisClient.Get(fullPath).Result()
+	v := this.redisClient.Get(fullPath)
+	if v == nil {
+		return nil, errors.New(fmt.Sprintf("error reading: %v, data is nil", fullPath))
+	}
+	value, err := v.Result()
 	if err != nil {
 		return nil, fmt.Errorf("error reading: %s, error: %s", fullPath, err.Error())
 	}
@@ -103,4 +109,8 @@ func (this *RedisDataStore) Cleanup() error {
 func getPath(bucket, key string) string {
 	fileName := fmt.Sprintf("%s.value", key)
 	return fmt.Sprintf("%s.%s", bucket, fileName)
+}
+
+func (this *RedisDataStore) CopyStore() (sdk.DataStore, error) {
+	return &RedisDataStore{bucketName: this.bucketName, redisClient: this.redisClient}, nil
 }

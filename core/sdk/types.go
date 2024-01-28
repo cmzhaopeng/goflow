@@ -14,6 +14,8 @@ type DataStore interface {
 	Del(key string) error
 	// Cleanup all the resources in DataStore
 	Cleanup() error
+	//Copy a DataSoure
+	CopyStore() (DataStore, error)
 }
 
 // StateStore for saving execution state
@@ -26,10 +28,14 @@ type StateStore interface {
 	Set(key string, value string) error
 	// Get a value
 	Get(key string) (string, error)
+	// Increase the value of key with a given increment
+	Incr(key string, value int64) (int64, error)
 	// Compare and Update a value
 	Update(key string, oldValue string, newValue string) error
 	// Cleanup all the resources in StateStore (called only once in a request span)
 	Cleanup() error
+	//copy Store
+	CopyStore() (StateStore, error)
 }
 
 // EventHandler handle flow events
@@ -38,6 +44,8 @@ type EventHandler interface {
 	Configure(flowName string, requestId string)
 	// Initialize an EventHandler (called only once in a request span)
 	Init() error
+	//copy Store
+	Copy() (EventHandler, error)
 	// ReportRequestStart report a start of request
 	ReportRequestStart(requestId string)
 	// ReportRequestEnd reports an end of request

@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -65,8 +66,8 @@ type Node struct {
 
 	dynamic       bool                 // Denotes if the node is dynamic
 	aggregator    Aggregator           // The aggregator aggregates multiple inputs to a node into one
-	foreach       ForEach              // If specified foreach allows to execute the vertex in parralel
-	condition     Condition            // If specified condition allows to execute only selected subdag
+	foreach       ForEach              // If specified foreach allows to execute the vertex in parallel
+	condition     Condition            // If specified condition allows to execute only selected sub-dag
 	subAggregator Aggregator           // Aggregates foreach/condition outputs into one
 	forwarder     map[string]Forwarder // The forwarder handle forwarding output to a children
 
@@ -195,19 +196,19 @@ func (this *Dag) GetEndNode() *Node {
 	return this.endNode
 }
 
-// HasBranch check if dag or its subdags has branch
+// HasBranch check if dag or its sub-dags has branch
 func (this *Dag) HasBranch() bool {
 	return this.hasBranch
 }
 
-// HasEdge check if dag or its subdags has edge
+// HasEdge check if dag or its sub-dags has edge
 func (this *Dag) HasEdge() bool {
 	return this.hasEdge
 }
 
-// Validate validates a dag and all subdag as per faas-flow dag requirments
+// Validate validates a dag and all sub-dag as per faas-flow dag requirements
 // A validated graph has only one initialNode and one EndNode set
-// if a graph has more than one endnode, a seperate endnode gets added
+// if a graph has more than one end-node, a separate end-node gets added
 func (this *Dag) Validate() error {
 	initialNodeCount := 0
 	var endNodes []*Node
@@ -339,6 +340,39 @@ func (this *Dag) GetNodes(dynamicOption string) []string {
 // IsExecutionFlow check if a dag doesn't use intermediate data
 func (this *Dag) IsExecutionFlow() bool {
 	return this.executionFlow
+}
+
+// GetDefinitionJson generate DAG definition as a json
+func (dag *Dag) GetDefinitionJson() ([]byte, error) {
+	root := &DagExporter{}
+
+	// Validate the dag
+	root.IsValid = true
+	err := dag.Validate()
+	if err != nil {
+		root.IsValid = false
+		root.ValidationError = err.Error()
+	}
+
+	exportDag(root, dag)
+	encoded, err := json.MarshalIndent(root, "", "    ")
+	return encoded, err
+}
+
+// GetDefinition represent DAG definition with exporter
+func (dag *Dag) GetDefinition() (*DagExporter, error) {
+	root := &DagExporter{}
+
+	// Validate the dag
+	root.IsValid = true
+	err := dag.Validate()
+	if err != nil {
+		root.IsValid = false
+		root.ValidationError = err.Error()
+	}
+
+	exportDag(root, dag)
+	return root, err
 }
 
 // inSlice check if a node belongs in a slice

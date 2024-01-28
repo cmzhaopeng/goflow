@@ -245,6 +245,17 @@ func (currentDag *Dag) ConditionalBranch(vertex string, conditions []string, con
 	return
 }
 
+func (currentDag *Dag) Validate() error {
+	return currentDag.udag.Validate()
+}
+
+func (currentDag *Dag) Definition() (*sdk.DagExporter, error) {
+	return currentDag.udag.GetDefinition()
+}
+
+func (currentDag *Dag) DefinitionJson() ([]byte, error) {
+	return currentDag.udag.GetDefinitionJson()
+}
 
 // createWorkload Create a function with execution name
 func createWorkload(id string, mod operation.Modifier) *operation.GoFlowOperation {

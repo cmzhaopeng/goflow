@@ -1,10 +1,11 @@
 package RedisStateStore
 
 import (
+	"errors"
 	"fmt"
 
-	faasflow "github.com/s8sg/goflow/core/sdk"
 	"github.com/go-redis/redis"
+	"github.com/s8sg/goflow/core/sdk"
 )
 
 type RedisStateStore struct {
@@ -18,11 +19,12 @@ type Incrementer interface {
 	Incr(key string, value int64) (int64, error)
 }
 
-func GetRedisStateStore(redisUri string) (faasflow.StateStore, error) {
+func GetRedisStateStore(redisUri string, password string) (sdk.StateStore, error) {
 	stateStore := &RedisStateStore{}
 
 	client := redis.NewClient(&redis.Options{
-		Addr: redisUri,
+		Addr:     redisUri,
+		Password: password,
 	})
 
 	err := client.Ping().Err()
@@ -93,7 +95,11 @@ func (this *RedisStateStore) Set(key string, value string) error {
 func (this *RedisStateStore) Get(key string) (string, error) {
 	key = this.KeyPath + "." + key
 	client := this.rds
-	value, err := client.Get(key).Result()
+	v := client.Get(key)
+	if v == nil {
+		return "", errors.New(fmt.Sprintf("failed to get key %s, nil", key))
+	}
+	value, err := v.Result()
 	if err == redis.Nil {
 		return "", fmt.Errorf("failed to get key %s, nil", key)
 	} else if err != nil {
@@ -121,4 +127,7 @@ func (this *RedisStateStore) Cleanup() error {
 		rerr = err
 	}
 	return rerr
+}
+func (this *RedisStateStore) CopyStore() (sdk.StateStore, error) {
+	return &RedisStateStore{KeyPath: this.KeyPath, RetryCount: this.RetryCount, rds: this.rds}, nil
 }
